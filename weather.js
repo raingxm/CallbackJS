@@ -5,7 +5,7 @@ module.exports = {
     var temp, err;
 
     switch (place) {
-      case "San Francisco,CA":
+      case "San Francisco, CA":
         temp = 56.59;
         break;
       case "New York,NY":
