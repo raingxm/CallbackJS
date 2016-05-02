@@ -8,10 +8,10 @@ module.exports = {
       case "San Francisco, CA":
         temp = 56.59;
         break;
-      case "New York,NY":
+      case "New York, NY":
         temp = 44.76;
         break;
-      case "Seattle,WA":
+      case "Seattle, WA":
         temp = 48.92;
         break;
       default:
