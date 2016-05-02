@@ -1,5 +1,5 @@
 var express = require('express'),
-  async = require('async'),
+  co = require('co'),
   weather = require('./weather'),
   population = require('./population'),
   loaction = require('location');
@@ -10,54 +10,34 @@ app.get('/:zipcode', function (req, res) {
   var zipcode, city, state, temperature, pepole, info;
   zipcode = req.params.zipcode;
 
-  async.parellel(
-    [
-      function (callback) {
-        location.findLocationByZipcode(zipcode, callback)
-      },
-      function (callback) {
-        population.findPopulationByZipcode(zipcode, callback);
-      }
-    ],
-    function (err, results) {
-      if (err) {
-        res.status(500).send('Ouch, we had a problem!');
-      } else {
-        var foundLocation, foundPopulation;
-        if (results && results.length > 1) {
-          foundLocation = results[0];
-          foundPopulation = results[1];
-        }
-        if (foundLocation && foundPopulation) {
-          weather.getTemperatureByLatLong(foundLocation.latitude, foundLocation.longtitude,
-            function (err, foundTemperature) {
-              if (err) {
-                res.status(500).send('Ouch, we had a problem.');
-              }
-              else {
-                if (foundTemperature) {
-                  city = foundLocation.city;
-                  state = foundLocation.state;
-                  temperature = foundTemperature;
-                  people = foundPopulation;
+  co(function *() {
+    try {
+      var results = yield {
+        foundLocation: location.findLocationByZipcode(zipcode),
+        foundPopulation: population.findPopulationByZipcode(zipcode)
+      };
 
-                  info = 'Location: ' + city + ', ' + state;
-                  info += ', Temperature: ' + temperature + ' F';
-                  info += ', Popluation: ' + people;
-                  res.send(info);
-                }
-                else {
-                  res.status(500).send('Ouch, we had a problem.');
-                }
-              }
-            });
-        }
-        else {
-          res.status(500).send('Ouch, we had a problem.')
-        }
+      if (results && results.foundLocation && results.foundPopulation) {
+        var foundTemperature = yield weather.getTemperatureByLatLong(results.foundLocation.latitude,
+          results.foundLocation.longtitude);
+        city = resuls.foundLocation.city;
+        state = results.foundLocation.state;
+        temperature = foundTemperature;
+        people = results.foundPopulation;
+
+        info = 'Location: ' + city + ', ' + state;
+        info += ', Temperature: ' + temperature;
+        info += ', Population: ' + pepole;
+        res.send(info);
       }
+      else {
+        res.status(500).send('Ouch, we had a problem.');
+      }
+
+    } catch (err) {
+      res.status(500).send('Ouch, we had a problem.');
     }
-  );
+  })();
 });
 
 app.listen(3000);
